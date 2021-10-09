@@ -9,7 +9,22 @@ import Foundation
 
 struct MemoryGame<CardContent> where CardContent: Equatable {
     private(set) var cards: Array<Card>
-    private var indexOfOneAndOnlyFaceUpCard: Int?
+    private var indexOfOneAndOnlyFaceUpCard: Int? {
+        get { cards.indices.filter { cards[$0].isFaceUp }.oneAndOnly }
+        set { cards.indices.forEach { cards[$0].isFaceUp = ($0 == newValue) }}
+    }
+    
+    init(numberOfPairOfCards: Int, createCardContent: (Int) -> CardContent) {
+        cards = []
+        
+        for pairIndex in 0..<numberOfPairOfCards {
+            let content = createCardContent(pairIndex)
+            cards.append(Card(content: content, id: pairIndex * 2 ))
+            cards.append(Card(content: content, id: pairIndex * 2 + 1))
+        }
+        cards.shuffle()
+       
+    }
     
     mutating func choose(_ card: Card) {
         if let chosenIndex = cards.firstIndex(where: {$0.id == card.id}),
@@ -21,40 +36,38 @@ struct MemoryGame<CardContent> where CardContent: Equatable {
                     cards[chosenIndex].isMatched = true
                     cards[possibleMatchedIndex].isMatched = true
                 }
-                indexOfOneAndOnlyFaceUpCard = nil
+                cards[chosenIndex].isFaceUp = true
             } else {
-                for index in cards.indices {
-                    cards[index].isFaceUp = false
-                }
                 indexOfOneAndOnlyFaceUpCard = chosenIndex
             }
-            cards[chosenIndex].isFaceUp.toggle()
         }
     }
     
+    mutating func shuffle() {
+        cards.shuffle()
+    }
     
     /// Create Memory game with number of pairs in the game and each pair index will be added to the closure to create the cards
     ///
     /// - Parameter numberOfPairOfCards: add number of pairs of cards in the game
-    /// - Parameter createCardContent: Return card content to create pair of cards based on the pair index. 
-    
-    init(numberOfPairOfCards: Int, createCardContent: (Int) -> CardContent) {
-        cards = []
-        
-        for pairIndex in 0..<numberOfPairOfCards {
-            let content = createCardContent(pairIndex)
-            cards.append(Card(content: content, id: pairIndex * 2 ))
-            cards.append(Card(content: content, id: pairIndex * 2 + 1))
-        }
-       
-    }
+    /// - Parameter createCardContent: Return card content to create pair of cards based on the pair index.
     
     struct Card: Identifiable {
-        var isFaceUp: Bool = false
-        var isMatched: Bool = false
+        var isFaceUp = false
+        var isMatched = false
         var content: CardContent
         var id: Int
         
         
+    }
+}
+
+extension Array {
+    var oneAndOnly: Element? {
+        if count == 1 {
+            return first
+        } else {
+            return nil
+        }
     }
 }
